@@ -1,0 +1,4 @@
+__pycache__/
+*.dll
+Reacher_Windows_x86_64/
+*.log
