@@ -80,7 +80,7 @@ Two choices are available to train an agent inside this repository.
 
 ## train_agent.py
 
-The train_agent.py file is dedicated to run a single train of a specified agent.
+The train_agent.py file is dedicated to run a single train for a specified agent.
 
 1. Update the file_name of the UnityEnvironment in order to match the location of the Unity environment that you downloaded.
 - Mac: "path/to/Reacher.app"
@@ -92,9 +92,10 @@ The train_agent.py file is dedicated to run a single train of a specified agent.
 - Linux (x86_64, headless): "path/to/Reacher_Linux_NoVis/Reacher.x86_64"
 
 	For instance, if you are using a Mac, then you downloaded Banana.app. If this file is in the same folder as the notebook, then the line below should appear as follows:
-	> env = UnityEnvironment(file_name="Banana.app")
+	> env = UnityEnvironment(file_name="Reacher.app")
 
 *example with windows (x86_64) :*
+
 ![example with windows (x86_64)](LoadEnvironment.PNG)
 
 2. Adjust the agent parameter depending on the test you want to execute.
