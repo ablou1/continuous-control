@@ -9,8 +9,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
-LR_ACTOR = 1e-4         # learning rate of the actor
-LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -19,11 +17,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class ActorCriticAgent():
     """Interacts with and learns from the environment."""
 
-    # Either the agent is in a training mode or in a "playing" mode
-    TRAIN = 0
-    PLAYING = 1
-
-    def __init__(self, state_size, action_size, seed, gamma=0.99, tau=1e-3, batch_size=128, mode=TRAIN):
+    def __init__(self, state_size, action_size, seed, gamma=0.99, tau=1e-3, batch_size=128, hidden_layer_size=(512, 256), lr_actor_critic=(1e-3, 1e-4), noise=(0.6, 0.995)):
         """Initialize an Agent object.
 
         Params
@@ -35,7 +29,9 @@ class ActorCriticAgent():
             update_every (int): how often to update the network
             tau (float): for soft update of target parameters
             batch_size (int): minibatch size
-            mode (boolean): mode activated (0 for training, 1 for playing)
+            hidden_layer_size (tuple(int, int)): tuple of hidden layer size for the actor and critic network
+            lr_actor_critic (tuple(float, float)): tuple of learning rates of the actor and of the critic
+            noise (tuple(float, float)): tuple containing the noise factor and the rate to apply to the factor after each episode
         """
         self.state_size = state_size
         self.action_size = action_size
@@ -44,21 +40,26 @@ class ActorCriticAgent():
         self.tau = tau
         self.batch_size = batch_size
         self.name = f'agent'
-        self.mode = mode
 
+        lr_actor, lr_critic = lr_actor_critic
         # Actor Networks (local one and target one)
-        self.actor_local = Actor(state_size, action_size, seed).to(device)
-        self.actor_target = Actor(state_size, action_size, seed).to(device)
-        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
+        fc1_units, fc2_units = hidden_layer_size
+        self.actor_local = Actor(state_size, action_size, seed, fc1_units=fc1_units, fc2_units=fc2_units).to(device)
+        self.actor_target = Actor(state_size, action_size, seed, fc1_units=fc1_units, fc2_units=fc2_units).to(device)
+        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=lr_actor)
 
         # Critic Network (local one and target one)
         self.critic_local = Critic(state_size, action_size, seed).to(device)
         self.critic_target = Critic(state_size, action_size, seed).to(device)
-        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
+        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=lr_critic, weight_decay=WEIGHT_DECAY)
+
+        # Initialize the target model weights with the local ones (same values)
+        self.actor_target.load_state_dict(self.actor_local.state_dict())
+        self.critic_target.load_state_dict(self.critic_local.state_dict())
 
         # Noise process
-        #self.noise = OUNoise(action_size, seed)
-        self.noise = GaussianNoise(action_size, 1)
+        factor, decay_rate = noise
+        self.noise = GaussianNoise(action_size, factor, decay_rate=decay_rate)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, batch_size, seed)
@@ -95,6 +96,10 @@ class ActorCriticAgent():
         
         return np.clip(actions, -1, 1)
 
+    def end(self):
+        """ Method applied at the end of each episode """
+        self.noise.end()
+
     def reset(self):
         self.noise.reset()
 
@@ -115,8 +120,7 @@ class ActorCriticAgent():
         Q_targets = rewards + (self.gamma * Q_targets_next * (1 - dones))
         # Compute critic loss
         Q_expected = self.critic_local(states, actions)
-        #critic_loss = F.mse_loss(Q_expected, Q_targets.detach())
-        critic_loss = F.mse_loss(Q_expected, Q_targets)
+        critic_loss = F.mse_loss(Q_expected, Q_targets.detach())
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
@@ -126,8 +130,7 @@ class ActorCriticAgent():
         # ---------------------------- update actor ---------------------------- #
         # Compute actor loss
         actions_pred = self.actor_local(states)
-        #actor_loss = -self.critic_local(states.detach(), actions_pred).mean()
-        actor_loss = -self.critic_local(states, actions_pred).mean()
+        actor_loss = -self.critic_local(states.detach(), actions_pred).mean()
         # Minimize the loss
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
@@ -151,48 +154,20 @@ class ActorCriticAgent():
             target_param.data.copy_(self.tau*local_param.data + (1.0-self.tau)*target_param.data)
 
 class GaussianNoise:
-    def __init__(self, size, factor):
-        self.descr = f'GaussianNoise(factor = {factor})'
+    def __init__(self, size, factor, decay_rate=0.995, min_rate=0.05):
         self.size = size
         self.factor = factor
+        self.decay_rate = decay_rate
+        self.min_rate = min_rate
 
     def reset(self):
         pass
 
     def sample(self):
-        self.factor = max(0.04, self.factor * 0.99995)
         return np.random.standard_normal(self.size) * self.factor
 
-    def __str__(self):
-        return self.descr
-
-    def __repr__(self):
-        return self.descr
-
-class OUNoise:
-    """Ornstein-Uhlenbeck process."""
-
-    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):
-        """Initialize parameters and noise process."""
-        self.mu = mu * np.ones(size)
-        self.theta = theta
-        self.sigma = sigma
-        self.seed = random.seed(seed)
-        self.size = size
-        self.reset()
-
-    def reset(self):
-        """Reset the internal state (= noise) to mean (mu)."""
-        self.state = copy.copy(self.mu)
-
-    def sample(self):
-        """Update internal state and return it as a noise sample."""
-        x = self.state
-        #dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
-        dx = self.theta * (self.mu - x) + self.sigma * np.random.uniform(-1.0, 1.0, len(self.mu))
-        self.state = x + dx
-        #return self.state
-        return torch.distributions.normal.Normal(torch.zeros(self.size), 0.4).sample()
+    def end(self):
+        self.factor = max(self.min_rate, self.factor * self.decay_rate)
 
 
 class ReplayBuffer:
