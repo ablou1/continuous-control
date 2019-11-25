@@ -116,11 +116,11 @@ You can define the number of episodes allocated for each training process.
 
 In order to test different parameters, you just have to indicate the values you want to test. Take care of the calculation time. After each training, a file save the result in order to display graph at the end of the notebook. The checkpoint files are also saved in this part.
 
-Inside the AGENT_ATTRIBUTES_TO_TEST dictionary, you have to indicate the value you want to test that are not the default ones.
+Inside the AGENT_ATTRIBUTES_TO_TEST dictionary, you have to indicate the values you want to test that are not the default ones.
 
-Inside the BASE_ATTRIBUTES_VALUES, you have to indicate the default value of each parameter you want to test. See the example below:
+Inside the BASE_ATTRIBUTES_VALUES, you have to indicate the default values of each parameter tested. See the example below:
 
-![parameters](parameters.png)
+![parameters](parameters.PNG)
 
 ### Results analysis
 This part shows graph comparing different attributes values for a single parameter.
