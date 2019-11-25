@@ -120,7 +120,7 @@ Inside the AGENT_ATTRIBUTES_TO_TEST dictionary, you have to indicate the values 
 
 Inside the BASE_ATTRIBUTES_VALUES, you have to indicate the default values of each parameter tested. See the example below:
 
-![parameters](parameters.PNG)
+![parameters](Parameters.PNG)
 
 ### Results analysis
 This part shows graph comparing different attributes values for a single parameter.
