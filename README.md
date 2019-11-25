@@ -123,7 +123,7 @@ Inside the BASE_ATTRIBUTES_VALUES, you have to indicate the default values of ea
 ![parameters](Parameters.PNG)
 
 ### Results analysis
-This part shows graph comparing different attributes values for a single parameter.
+This part shows graphs comparing different attributes values for a single parameter.
 
 ### checkpoint.pth format
 The checkpoint.pth file contains a dictionary with the following informations:
