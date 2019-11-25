@@ -1,5 +1,5 @@
 # p2-continous-control
-Deep Reinforcement Learning - Project dedicated to train a double-jointed arm can move to target locations.
+Deep Reinforcement Learning - Project dedicated to train a double-jointed arm to move to target locations.
 
 This project is part of the **Deep Reinforcement learning NanoDegree - Udacity**. It's the second project names p2-continuous-control
 
@@ -56,7 +56,7 @@ To set up your python environment to run the code in this repository, follow the
 
 6. Before running code in a notebook, change the kernel to match the drlnd environment by using the drop-down Kernel menu.
 
-![Jupyter](kernel.png)
+![Kernel](kernel.PNG)
 
 
 # Download the Environment
